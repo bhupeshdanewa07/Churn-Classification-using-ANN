@@ -18,8 +18,20 @@ with open('onehot_encoder_geo.pkl', 'rb') as file:
 with open('scaler.pkl', 'rb') as file:
     scaler = pickle.load(file)
 
-# Streamlit app title
-st.title('Customer Churn Prediction')
+# ------------------ 🎨 App UI Personalization -------------------
+st.set_page_config(page_title="Churn Prediction by Bhupesh", page_icon="📊")
+
+st.markdown("<h1 style='text-align: center; color: #4CAF50;'>Customer Churn Prediction</h1>", unsafe_allow_html=True)
+st.markdown("<h4 style='text-align: center; color: gray;'>A Streamlit app developed by <span style='color: #2C7BE5;'>Bhupesh</span></h4>", unsafe_allow_html=True)
+
+with st.sidebar:
+    st.header("👨‍💻 About Bhupesh")
+    st.markdown("""
+    - 🎓 M.Tech in AI @ NIT Bhopal  
+    - 💡 Focused on building intelligent automation solutions  
+    - 📫 Connect: [LinkedIn](https://linkedin.com/in/bhupesh-danewa-17a65a204)  
+    """)
+# ---------------------------------------------------------------
 
 # User inputs
 geography = st.selectbox('Geography', onehot_encoder_geo.categories_[0])
@@ -62,11 +74,15 @@ if st.button('Predict'):
     prediction = model.predict(input_data_scaled)
     prediction_proba = prediction[0][0]
 
-    st.write(f'Churn Probability: {prediction_proba:.2f}')
+    st.success(f'🔍 Churn Probability: {prediction_proba:.2f}')
 
     if prediction_proba > 0.5:
-        st.write('The customer is likely to churn.')
+        st.error('🚨 The customer is likely to churn.')
     else:
-        st.write('The customer is not likely to churn.')
+        st.info('✅ The customer is not likely to churn.')
 else:
-    st.write('Please enter details and click Predict.')
+    st.write('ℹ️ Please enter details and click Predict.')
+
+# Footer
+st.markdown("---")
+st.markdown("<div style='text-align: center;'>Made with ❤️ by Bhupesh</div>", unsafe_allow_html=True)
