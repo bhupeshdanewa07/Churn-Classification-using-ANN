@@ -63,7 +63,7 @@ with col2:
     balance        = st.number_input("Balance (₹)",   min_value=0.0, format="%.2f", value=50000.0)
     tenure         = st.slider("Tenure (Years)",    0, 10, 3)
     products       = st.slider("Number of Products",1, 4, 1)
-    estimated_salary = st.number_input("Est. Salary (₹)", min_value=0.0, format="%.2f", value=50000.0)
+    estimated_salary = st.number_input("Est. Salary", min_value=0.0, format="%.2f", value=50000.0)
 
 has_cc   = st.radio("Has Credit Card?", ["Yes","No"])
 active   = st.radio("Active Member?",   ["Yes","No"])
