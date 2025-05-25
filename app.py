@@ -90,9 +90,9 @@ if st.button("🔍 Predict Churn"):
     # show verdict
     if proba > 0.5:
         st.error("🚨 High churn risk!")
-        st.balloons()
     else:
         st.success("✅ Low churn risk.")
+        st.balloons()
 
 
 # Footer
