@@ -5,84 +5,96 @@ from sklearn.preprocessing import StandardScaler, LabelEncoder, OneHotEncoder
 import pandas as pd
 import pickle
 
-# Load the trained model
-model = tf.keras.models.load_model('model.h5')
+# —————————— CACHING & SETUP ——————————
+@st.cache_resource(show_spinner=False)
+def load_artifacts():
+    model = tf.keras.models.load_model('model.h5')
+    with open('label_encoder_gender.pkl','rb')  as f: le = pickle.load(f)
+    with open('onehot_encoder_geo.pkl','rb') as f: ohe = pickle.load(f)
+    with open('scaler.pkl','rb')             as f: sc = pickle.load(f)
+    return model, le, ohe, sc
 
-# Load encoders and scaler
-with open('label_encoder_gender.pkl', 'rb') as file:
-    label_encoder_gender = pickle.load(file)
+model, le_gender, ohe_geo, scaler = load_artifacts()
 
-with open('onehot_encoder_geo.pkl', 'rb') as file:
-    onehot_encoder_geo = pickle.load(file)
+st.set_page_config(
+    page_title="🚀 Churn Predictor by Bhupesh",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-with open('scaler.pkl', 'rb') as file:
-    scaler = pickle.load(file)
-
-# ------------------ 🎨 App UI Personalization -------------------
-st.set_page_config(page_title="Churn Prediction by Bhupesh", page_icon="📊")
-
-st.markdown("<h1 style='text-align: center; color: #4CAF50;'>Customer Churn Prediction</h1>", unsafe_allow_html=True)
-st.markdown("<h4 style='text-align: center; color: gray;'>A Streamlit app developed by <span style='color: #2C7BE5;'>Bhupesh</span></h4>", unsafe_allow_html=True)
-
+# —————————— SIDEBAR ——————————
 with st.sidebar:
-    st.header("👨‍💻 About Bhupesh")
+    st.image("https://your-university-logo-url.png", use_column_width=True)
+    st.markdown("## 👨‍💻 About")
     st.markdown("""
-    - 🎓 M.Tech in AI @ NIT Bhopal  
-    - 💡 Focused on building intelligent automation solutions  
-    - 📫 Connect: [LinkedIn](https://linkedin.com/in/bhupesh-danewa-17a65a204)  
+    - **Bhupesh Danewa**  
+    - M.Tech AI @ NIT Bhopal  
+    - Building Intelligent Automation Solutions  
+    - [LinkedIn](https://linkedin.com/in/bhupesh-danewa-17a65a204)
     """)
-# ---------------------------------------------------------------
+    st.markdown("---")
+    st.markdown("## ⚙️ Settings")
+    theme = st.selectbox("Theme", ["Light","Dark"])
+    if theme=="Dark":
+        st.markdown(
+            """<style>
+               .css-1d391kg {background-color: #0e1117;}
+             </style>""",
+            unsafe_allow_html=True
+        )
 
-# User inputs
-geography = st.selectbox('Geography', onehot_encoder_geo.categories_[0])
-gender = st.selectbox('Gender', label_encoder_gender.classes_)
-age = st.slider('Age', 18, 92)
-balance = st.number_input('Balance', min_value=0.0, format="%.2f")
-credit_score = st.number_input('Credit Score', min_value=0)
-estimated_salary = st.number_input('Estimated Salary', min_value=0.0, format="%.2f")
-tenure = st.slider('Tenure', 0, 10)
-num_of_products = st.slider('Number of Products', 1, 4)
-has_cr_card = st.selectbox('Has Credit Card', [0, 1])
-is_active_member = st.selectbox('Is Active Member', [0, 1])
+# —————————— MAIN LAYOUT ——————————
+st.title("📊 Customer Churn Prediction")
+st.markdown(
+    "<p style='text-align:center; color:gray;'>Use this interactive tool to estimate churn risk.</p>",
+    unsafe_allow_html=True
+)
 
-# Predict button
-if st.button('Predict'):
-    # Prepare the input data
-    input_data = pd.DataFrame({
-        'CreditScore': [credit_score],
-        'Gender': [label_encoder_gender.transform([gender])[0]],
-        'Age': [age],
-        'Tenure': [tenure],
-        'Balance': [balance],
-        'NumOfProducts': [num_of_products],
-        'HasCrCard': [has_cr_card],
-        'IsActiveMember': [is_active_member],
-        'EstimatedSalary': [estimated_salary]
+# two-column layout for inputs
+col1, col2 = st.columns(2)
+with col1:
+    geography      = st.selectbox("Geography",      ohe_geo.categories_[0])
+    gender         = st.selectbox("Gender",         le_gender.classes_)
+    age            = st.slider("Age", 18, 92, 30)
+    credit_score   = st.number_input("Credit Score", min_value=300, max_value=850, value=600)
+
+with col2:
+    balance        = st.number_input("Balance (₹)",   min_value=0.0, format="%.2f", value=50000.0)
+    tenure         = st.slider("Tenure (Years)",    0, 10, 3)
+    products       = st.slider("Number of Products",1, 4, 1)
+    estimated_salary = st.number_input("Est. Salary (₹)", min_value=0.0, format="%.2f", value=50000.0)
+
+has_cc   = st.radio("Has Credit Card?", ["Yes","No"])
+active   = st.radio("Active Member?",   ["Yes","No"])
+
+if st.button("🔍 Predict Churn"):
+    # prepare input
+    X = pd.DataFrame({
+        'CreditScore':[credit_score], 'Gender':[le_gender.transform([gender])[0]],
+        'Age':[age], 'Tenure':[tenure], 'Balance':[balance],
+        'NumOfProducts':[products],
+        'HasCrCard':[1 if has_cc=="Yes" else 0],
+        'IsActiveMember':[1 if active=="Yes" else 0],
+        'EstimatedSalary':[estimated_salary]
     })
+    geo_enc = ohe_geo.transform([[geography]]).toarray()
+    geo_df  = pd.DataFrame(geo_enc, columns=ohe_geo.get_feature_names_out())
+    X_full  = pd.concat([X, geo_df], axis=1)
+    X_scaled= scaler.transform(X_full)
 
-    # One-hot encode Geography
-    geo_encoded = onehot_encoder_geo.transform([[geography]]).toarray()
-    geo_encoded_df = pd.DataFrame(geo_encoded, columns=onehot_encoder_geo.get_feature_names_out(['Geography']))
+    # predict
+    proba = model.predict(X_scaled)[0,0]
+    st.metric("Churn Probability", f"{proba:.2%}", delta=None)
 
-    # Combine with input data
-    input_data = pd.concat([input_data.reset_index(drop=True), geo_encoded_df], axis=1)
-
-    # Scale input data
-    input_data_scaled = scaler.transform(input_data)
-
-    # Predict churn
-    prediction = model.predict(input_data_scaled)
-    prediction_proba = prediction[0][0]
-
-    st.success(f'🔍 Churn Probability: {prediction_proba:.2f}')
-
-    if prediction_proba > 0.5:
-        st.error('🚨 The customer is likely to churn.')
+    # show verdict
+    if proba > 0.5:
+        st.error("🚨 High churn risk!")
+        st.balloons()
     else:
-        st.info('✅ The customer is not likely to churn.')
-else:
-    st.write('ℹ️ Please enter details and click Predict.')
+        st.success("✅ Low churn risk.")
+
 
 # Footer
 st.markdown("---")
-st.markdown("<div style='text-align: center;'>Made with ❤️ by Bhupesh</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center;'>Made with ❤️ by Bhupesh</div>", unsafe_allow_html=True)
