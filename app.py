@@ -25,7 +25,8 @@ st.set_page_config(
 
 # —————————— SIDEBAR ——————————
 with st.sidebar:
-    st.image("https://your-university-logo-url.png", use_column_width=True)
+    st.image("https://upload.wikimedia.org/wikipedia/en/4/4f/Maulana_Azad_National_Institute_of_Technology_Logo.png
+", use_container_width=True)
     st.markdown("## 👨‍💻 About")
     st.markdown("""
     - **Bhupesh Danewa**  
