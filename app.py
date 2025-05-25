@@ -90,6 +90,28 @@ if st.button("🔍 Predict Churn"):
     # show verdict
     if proba > 0.5:
         st.error("🚨 High churn risk!")
+        st.markdown(
+        """
+        <div style="
+            padding: 1rem;
+            border: 2px solid #e63946;
+            background-color: #f8d7da;
+            color: #721c24;
+            font-weight: bold;
+            text-align: center;
+            animation: blink 1s step-end infinite;
+        ">
+            ⚠️ WARNING: High churn risk detected! ⚠️
+        </div>
+        <style>
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.2; }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
     else:
         st.success("✅ Low churn risk.")
         st.balloons()
